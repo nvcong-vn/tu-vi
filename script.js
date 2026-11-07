@@ -79,6 +79,36 @@ const CUC={Thủy:2,Mộc:3,Kim:4,Thổ:5,Hỏa:6};
 const CUC_NAME=["","","Thủy nhị cục","Mộc tam cục","Kim tứ cục","Thổ ngũ cục","Hỏa lục cục"];
 const LOC=[2,3,5,6,5,6,8,9,11,0];
 function cycleIndex(can,chi){return mod(can+10*mod((can-chi)/2,6),60);}
+// Bảng độ sáng chính tinh theo Tử Vi Thiên Cơ. Thứ tự nhóm: miếu, vượng, đắc, hãm.
+// Các chi còn lại thuộc mức bình. Chỉ số 0 = Tý, 11 = Hợi.
+const BRIGHT={
+ "Tử Vi":[[2,5,6,8],[4,10],[1,7],[]],
+ "Thiên Cơ":[[3,4,9,10],[5,8],[0,1,6,7],[2,11]],
+ "Thái Dương":[[5,6],[2,3,4],[1,7],[0,8,9,10,11]],
+ "Vũ Khúc":[[1,4,7,10],[0,2,6,8],[3,9],[5,11]],
+ "Thiên Đồng":[[2,8],[0],[3,5,11],[1,4,6,7,9,10]],
+ "Liêm Trinh":[[0,2,6,8],[],[],[3,5,9,11]],
+ "Thiên Phủ":[[0,1,2,7],[3,4,6,10],[],[]],
+ "Thái Âm":[[9,10,11],[0,8],[1,7],[2,3,4,5,6]],
+ "Tham Lang":[[1,7],[4,10],[2,8],[0,3,5,6,9,11]],
+ "Cự Môn":[[2,3,8,9],[0,6,11],[],[1,4,5,7,10]],
+ "Thiên Tướng":[[2,8],[0,4,6,10],[1,5,7,11],[3,9]],
+ "Thiên Lương":[[4,6,10],[0,1,2,3,7,8],[],[5,9,11]],
+ "Thất Sát":[[0,2,6,8],[5,11],[1,7],[3,4,9,10]],
+ "Phá Quân":[[0,6],[1,4,7,10],[],[2,3,5,8,9,11]]
+};
+function majorText(h){
+  return h.major.map(s=>s+" ("+(["miếu","vượng","đắc","hãm"][BRIGHT[s].findIndex(g=>g.includes(h.index))]||"bình")+")").join(", ");
+}
+// Sao mang Lộc, Quyền, Khoa, Kỵ theo can năm sinh.
+const HOA=[
+ ["Liêm Trinh","Phá Quân","Vũ Khúc","Thái Dương"],["Thiên Cơ","Thiên Lương","Tử Vi","Thái Âm"],
+ ["Thiên Đồng","Thiên Cơ","Văn Xương","Liêm Trinh"],["Thái Âm","Thiên Đồng","Thiên Cơ","Cự Môn"],
+ ["Tham Lang","Thái Âm","Hữu Bật","Thiên Cơ"],["Vũ Khúc","Tham Lang","Thiên Lương","Văn Khúc"],
+ ["Thái Dương","Vũ Khúc","Thái Âm","Thiên Đồng"],["Cự Môn","Thái Dương","Văn Khúc","Văn Xương"],
+ ["Thiên Lương","Tử Vi","Tả Phù","Vũ Khúc"],["Phá Quân","Cự Môn","Thái Âm","Tham Lang"]
+];
+
 function birthChart(lunar,hour,male){
   const {year,month,day}=lunar, can=stem(year), chi=branch(year);
   const menh=mod(2+month-1-hour), than=mod(2+month-1+hour);
@@ -100,6 +130,17 @@ function birthChart(lunar,hour,male){
   add([1,0,11,11,1,0,6,6,3,3][can],"Thiên Khôi"); add([7,8,9,9,7,8,2,2,5,5][can],"Thiên Việt");
   add([2,11,8,5][chi%4],"Thiên Mã"); add(3-chi,"Hồng Loan"); add(9-chi,"Thiên Hỷ");
   ["Thái Tuế","Thiếu Dương","Tang Môn","Thiếu Âm","Quan Phù","Tử Phù","Tuế Phá","Long Đức","Bạch Hổ","Phúc Đức","Điếu Khách","Trực Phù"].forEach((s,i)=>add(chi+i,s));
+  const quadrant=Math.floor(mod(chi+1)/3);
+  add(2+3*quadrant,"Cô Thần"); add(10+3*quadrant,"Quả Tú");
+  add(6-chi,"Thiên Khốc"); add(6+chi,"Thiên Hư");
+  add(9+month-1,"Thiên Hình"); add(1+month-1,"Thiên Diêu");
+  add([5,1,9][chi%3],"Phá Toái");
+  HOA[can].forEach((star,i)=>{
+    const host=houses.find(h=>h.major.includes(star)||h.minor.includes(star));
+    add(host.index,["Hóa Lộc","Hóa Quyền","Hóa Khoa","Hóa Kỵ"][i]);
+  });
+  const triet=8-2*(can%5);
+  add(triet,"Triệt"); add(triet+1,"Triệt");
   return {lunar,hour,male,menh,than,cuc,direction,houses,napAm:NAP_AM[Math.floor(mod(year-1984,60)/2)]};
 }
 function fortune(chart,year,month){
@@ -134,47 +175,111 @@ const STAR_READINGS = {
   "Thất Sát":["quyết đoán, thích tự xử lý việc khó","dễ phát huy khi mục tiêu rõ và có quyền chủ động","thường muốn quyết nhanh khi có cơ hội","cần khoảng riêng và thích trao đổi thẳng","dễ giữ nhịp làm việc cao khi có việc gấp"],
   "Phá Quân":["sẵn sàng thay đổi cách làm đã quen","dễ phát huy khi cần sửa một cách làm cũ","sẵn sàng đổi kế hoạch khi cách cũ không còn phù hợp","muốn cả hai linh hoạt khi hoàn cảnh thay đổi","nhịp sinh hoạt dễ thay đổi theo công việc"]
 };
-const READING_TOPICS=[
-  [0,"Bản mệnh & tính cách","Khi đứng trước một lựa chọn, hãy đối chiếu cách mình thường quyết định với cách đọc này."],
-  [4,"Công danh & sự nghiệp","Có thể đối chiếu với nhiệm vụ nào ở nơi làm việc khiến bạn làm tốt và thấy hứng thú nhất."],
-  [8,"Tài chính & tiền bạc","Hãy đối chiếu với một khoản chi gần đây để xem bạn thường quyết ngay hay dành thời gian cân nhắc."],
-  [10,"Tình duyên & hạnh phúc gia đạo","Một cách áp dụng là cùng người thân nói rõ việc mỗi người cần được hỗ trợ trong tuần."],
-  [7,"Sức khỏe & tai ách","Ở đây, cung Tật Ách chỉ gợi ý quan sát thói quen sinh hoạt. Lá số không xác định bệnh, tai nạn hay tuổi thọ."]
-];
-function readingCards(chart,year,f,month){
-  const cards=READING_TOPICS.map(([kind,title,prompt],domain)=>{
-    const house=chart.houses.find(h=>h.kind===kind);
-    const opposite=chart.houses[mod(house.index+6)];
-    const source=house.major.length?house:opposite;
-    const evidence="Cung "+CUNG[kind]+" tại "+CHI[house.index]+
-      (source===house?" có ":" vô chính diệu, tham chiếu đối cung "+CUNG[source.kind]+" tại "+CHI[source.index]+" có ")+source.major.join(" và ")+".";
-    const traits=source.major.map(s=>STAR_READINGS[s][domain]);
-    let summary="Theo cách đọc này, bạn có xu hướng "+traits.join(", đồng thời ")+".";
-    let body=prompt;
-    if(kind===0) body="Bản mệnh nạp âm là "+chart.napAm+"; Thân cư "+CUNG[chart.houses[chart.than].kind]+". "+prompt;
-    if(kind===10){
-      const phuc=chart.houses.find(h=>h.kind===2);
-      const stars=phuc.major.length?phuc:chart.houses[mod(phuc.index+6)];
-      body="Về nếp nhà, cung Phúc Đức tại "+CHI[phuc.index]+(phuc===stars?" có ":" vô chính diệu, mượn sao đối cung ")+stars.major.join(" và ")+". Theo cách đọc này, trong gia đình bạn "+stars.major.map(s=>STAR_READINGS[s][3]).join(", đồng thời ")+". "+prompt;
-    }
-    return {title,summary,body,evidence};
-  });
-  const annual=chart.houses[f.annual];
-  const flowFocus={
-    "Lưu Thái Tuế":"là chủ đề dễ được chú ý",
-    "Lưu Lộc Tồn":"gợi ý xem mình đang có nguồn lực hoặc sự hỗ trợ nào",
-    "Lưu Kình Dương":"gợi ý để ý những việc dễ gây tranh luận",
-    "Lưu Đà La":"gợi ý dành thêm thời gian cho việc có thể kéo dài"
-  };
-  const body=[];
-  f.moving.forEach((stars,i)=>stars.forEach(s=>body.push(s+" ở cung "+CUNG[chart.houses[i].kind]+" "+flowFocus[s]+". ")));
-  if(month)body.push("Riêng tháng "+month+" âm lịch, cung nguyệt hạn là "+CUNG[chart.houses[f.monthly].kind]+", gợi ý chú ý "+CHU_DE[chart.houses[f.monthly].kind]+".");
-  const decade=f.decade?"Đại hạn "+f.decade.start+"–"+(f.decade.start+9)+" tuổi ở cung "+CUNG[f.decade.kind]+".":f.age<chart.cuc?"Chưa đến tuổi khởi đại hạn đầu.":"Đã qua 12 đại hạn của bàn số.";
-  cards.push({title:"Vận hạn năm "+year+" · "+canChi(year),summary:"Trọng tâm tham khảo của năm là "+CHU_DE[annual.kind]+". "+(f.decade?.index===f.annual?"Đại hạn và tiểu hạn cùng vào cung này nên chủ đề xuất hiện ở cả hai lớp thời gian.":f.decade?"Trong giai đoạn dài hơn, đại hạn gợi thêm bối cảnh về "+CHU_DE[f.decade.kind]+".":""),
-    body:body.join(""),evidence:f.age+" tuổi mụ. "+decade+" Tiểu hạn ở cung "+CUNG[annual.kind]+" tại "+CHI[f.annual]+"."});
-  return cards;
+function palaceName(h){return CUNG[h.kind]+" tại "+CHI[h.index];}
+function evidence(chart,h){
+  const opposite=chart.houses[mod(h.index+6)];
+  return "Cung "+palaceName(h)+". "+(h.major.length?majorText(h):"Vô chính diệu, tham chiếu đối cung "+palaceName(opposite)+" có "+majorText(opposite))+
+    (h.minor.length?". Sao đi cùng gồm "+h.minor.join(", "):"")+".";
 }
-
+// Mỗi đoạn dưới đây chỉ được dùng khi toàn bộ sao của bộ thực sự đồng cung.
+const COMBINATIONS=[
+ [["Thất Sát","Thiên Mã","Địa Không"],"Thất Sát thiên về quyết đoán, Thiên Mã thiên về di chuyển, còn Địa Không gợi những lần kế hoạch đổi hướng bất ngờ. Ghép ba ý lại, sở trường là dám nhận việc chưa có tiền lệ. Mặt khó là có thể đi quá nhanh khi thông tin còn thiếu. Khi thử cách mới, nên xác định trước dấu hiệu nào sẽ khiến mình dừng lại và xem xét lại."],
+ [["Tử Vi","Thiên Phủ"],"Tử Vi chủ về đứng ra định hướng, Thiên Phủ chủ về gìn giữ và tổ chức nguồn lực. Đây là bộ Tử Phủ đồng cung: sức mạnh của nó nằm ở việc vừa quyết được việc, vừa giữ được người và nguồn lực để thực hiện. Nếu đóng ở Thiên Di, ý này dễ thấy nhất khi làm việc với đối tác hoặc một nhóm mới."],
+ [["Phá Quân","Kình Dương"],"Phá Quân thiên về tháo bỏ cái cũ; Kình Dương làm nổi bật sức ép khi phải quyết nhanh. Trong công việc, bộ này hợp với tình huống một quy trình đã gây sai sót và cần người đứng ra sửa. Chỗ dễ vướng là người đang làm theo quy trình cũ có thể phản ứng nếu chưa hiểu lý do thay đổi."],
+ [["Tham Lang","Điếu Khách"],"Tham Lang nghiêng về tìm cơ hội qua giao tiếp. Điếu Khách làm nổi vai trò của lời giới thiệu, thương lượng và chi phí giao tế. Một mối quen biết có thể mở đầu một thương vụ, nhưng doanh thu thực thu mới cho biết cơ hội ấy có giá trị đến đâu."],
+ [["Thái Dương","Lộc Tồn"],"Thái Dương gợi sự rõ ràng và chủ động, Lộc Tồn thiên về giữ gìn những gì đã tích lũy. Ở cung Điền, bộ này được đọc theo hướng gây dựng chỗ ở từng bước: biết mình cần nơi ở như thế nào, dành nguồn lực cho nó và chăm chút lâu dài. Giá trị thực tế vẫn tùy tài sản và khả năng chi trả."],
+ [["Vũ Khúc","Đà La"],"Vũ Khúc muốn thấy kết quả cụ thể, còn Đà La gợi việc kéo dài hoặc phải làm lại. Hai tính chất đặt cạnh nhau dễ thành cảm giác sốt ruột: đã bỏ công mà kết quả chưa theo kịp. Chia việc thành những mốc có thể kiểm tra sẽ dễ thấy phần nào thực sự đang tiến triển."],
+ [["Liêm Trinh","Thiên Tướng"],"Liêm Trinh coi trọng ranh giới, Thiên Tướng coi trọng sự công bằng. Trong quan hệ thân thiết, điều dễ gây băn khoăn là hai người đều nghĩ mình đã làm tròn phần việc nhưng lại mong ở nhau những điều khác nhau. Nói cụ thể về thời gian, tiền chung và trách nhiệm gia đình sẽ dễ hiểu nhau hơn."],
+ [["Văn Xương","Văn Khúc","Hóa Khoa"],"Xương và Khúc nghiêng về cách trình bày; Hóa Khoa nhấn vào việc năng lực được nhìn nhận qua bằng chứng. Nếu đang tìm việc, hãy chuẩn bị một ví dụ có số liệu cho CV hoặc buổi phỏng vấn. Người từng làm cùng có thể giúp nhận xét xem câu chuyện đã đủ rõ chưa."],
+ [["Thiên Đồng","Hóa Lộc"],"Thiên Đồng thiên về thích nghi và xây dựng hòa khí; Hóa Lộc gợi sự hỗ trợ hoặc trao đổi thuận lợi. Trong thực tế, đôi khi đó chỉ là một cuộc nói chuyện giúp tháo gỡ vướng mắc. Hãy nói rõ mình đang cần điều gì để người khác dễ hỗ trợ."]
+];
+const ADDITIONS=[
+ [["Địa Không","Cô Thần"],"Địa Không đi cùng Cô Thần gợi khuynh hướng tự tìm lối riêng. Khi chịu áp lực, điểm dễ bỏ sót là giữ cả phần khó cho mình mà chưa nói cho người có thể giúp."],
+ [["Địa Kiếp","Bạch Hổ"],"Địa Kiếp và Bạch Hổ thêm nét cạnh tranh, nhất là khi quyền hạn và trách nhiệm giữa các bên chưa rõ. Thỏa thuận cụ thể ai quyết định, ai chịu trách nhiệm sẽ giúp mặt tổ chức của bộ sao phát huy tốt hơn."],
+ [["Kình Dương","Thiên Hình"],"Kình Dương và Thiên Hình cùng cung làm nổi bật chuyện quy tắc và tranh luận. Khi đề xuất một thay đổi có nhiều bên liên quan, hãy thống nhất phạm vi và ghi lại tiêu chí hoàn thành trước khi triển khai."],
+ [["Thiên Diêu","Quả Tú"],"Thiên Diêu gợi sức hấp dẫn của một cơ hội, Quả Tú gợi xu hướng tự cân nhắc một mình. Với chuyện tiền bạc, một bước đối chiếu độc lập có thể giúp phát hiện chi phí mình chưa tính."],
+ [["Hóa Kỵ"],"Hóa Kỵ ở cung này được đọc như điểm dễ hiểu lầm hoặc bận lòng. Khi một việc gây khó chịu, thử nhắc lại điều mình nghe được và hỏi xem đó có đúng ý người kia hay không."],
+ [["Tả Phù","Hữu Bật"],"Tả Phù và Hữu Bật gợi sự trợ giúp từ hai phía. Có thể bắt đầu bằng một lời nhờ cụ thể, chẳng hạn nhờ người quen đọc hồ sơ hoặc giới thiệu đúng đầu mối."],
+ [["Tang Môn"],"Tang Môn gợi khuynh hướng để tâm lâu đến việc còn dang dở. Một việc đáng làm là phân biệt phần mình có thể xử lý ngay với phần cần thêm thông tin."]
+];
+function combination(h,rules){
+  const present=new Set([...h.major,...h.minor]);
+  return rules.find(([required])=>required.every(s=>present.has(s)))?.[1]||"";
+}
+function plain(chart,h,domain){
+  const source=h.major.length?h:chart.houses[mod(h.index+6)];
+  return source.major.map(s=>s+" gợi nét "+STAR_READINGS[s][domain]).join("; ")+".";
+}
+function paragraph(label,body){return {label,body};}
+function natalReport(chart){
+  const byKind=k=>chart.houses.find(h=>h.kind===k);
+  const topics=[
+    [0,0,"Mệnh & Thân · Con người và hướng phát triển","Khi tự quyết một việc khó, hãy thử nói rõ điều mình còn chưa chắc với một người tin cậy trước khi bắt tay làm."],
+    [4,1,"Công danh & sự nghiệp","Nếu muốn đổi vai trò, hãy chọn một việc từng làm tốt, nói rõ vấn đề ban đầu, cách xử lý và kết quả. Đó là cơ sở thực tế để nhận ra môi trường phù hợp."],
+    [8,2,"Tài chính & tiền bạc","Khi cân nhắc một cơ hội kiếm tiền, hãy viết ra chi phí, thời hạn thu tiền và khoản mình có thể dành cho nó."],
+    [3,2,"Nhà cửa & đất đai","Nếu đang tính chuyện chỗ ở, có thể bắt đầu từ nhu cầu ở thực, chi phí duy trì và nguồn tiền hiện có."],
+    [10,3,"Tình duyên & gia đạo","Nếu đang xây dựng một mối quan hệ, hãy trao đổi về điều mỗi người cần. Nếu đã có gia đình, có thể bắt đầu từ cách chia thời gian và việc nhà."],
+    [7,4,"Sức khỏe & nếp sinh hoạt","Hãy đối chiếu với giờ nghỉ, mức độ bận rộn và khả năng hồi phục thực tế. Lá số không cho biết bệnh hay tai nạn nào sẽ xảy ra."]
+  ];
+  return topics.map(([kind,domain,title,action])=>{
+    const h=byKind(kind);
+    const lines=[paragraph("Các sao nói gì?",combination(h,COMBINATIONS)||plain(chart,h,domain))];
+    const extra=combination(h,ADDITIONS);
+    if(extra)lines.push(paragraph("Điểm cần cân bằng",extra));
+    if(kind===0){
+      const than=chart.houses[chart.than];
+      lines.push(paragraph("Thân cư "+CUNG[than.kind],"Mệnh nói về cách bạn phản ứng ban đầu. Thân cho biết phần đời sống thường bộc lộ rõ hơn qua trải nghiệm: ở lá số này là "+CHU_DE[than.kind]+". "+evidence(chart,than)),
+        paragraph("Khi ra quyết định",combination(than,COMBINATIONS)||plain(chart,than,0)));
+      const addon=combination(than,ADDITIONS);if(addon)lines.push(paragraph("Mặt thử thách",addon));
+    }
+    if(kind===10){const family=byKind(2);lines.push(paragraph("Nếp nhà","Cung Phúc Đức nói về môi trường gia đình. "+evidence(chart,family)+" "+(combination(family,COMBINATIONS)||plain(chart,family,3))));}
+    lines.push(paragraph("Áp dụng vào đời sống",action));
+    return {title,lines,basis:evidence(chart,h)};
+  });
+}
+function annualReport(chart,year,f){
+  const annual=chart.houses[f.annual], focus=chart.houses[branch(year)];
+  const lines=[];
+  if(f.decade){
+    const position=f.age-f.decade.start+1;
+    lines.push(paragraph("Nền của mười năm","Đại hạn "+f.decade.start+"–"+(f.decade.start+9)+" tuổi ở cung "+palaceName(f.decade)+". Đây là năm thứ "+position+" trong đại hạn. "+(combination(f.decade,COMBINATIONS)||plain(chart,f.decade,0))));
+  }else lines.push(paragraph("Đại hạn",f.age<chart.cuc?"Chưa tới tuổi bắt đầu đại hạn đầu tiên.":"Đã qua mười hai đại hạn hiển thị trên bàn số."));
+  lines.push(paragraph("Tiểu hạn của năm","Tiểu hạn ở cung "+palaceName(annual)+", nên khi đọc năm này, trọng tâm là "+CHU_DE[annual.kind]+". "+(f.decade===annual?"Tiểu hạn trùng đại hạn: cùng một chủ đề xuất hiện ở cả bối cảnh dài hạn và năm đang xem.":"Hãy đọc chủ đề năm trong bối cảnh đại hạn nêu trên.")));
+  lines.push(paragraph("Nơi Lưu Thái Tuế tác động","Lưu Thái Tuế đóng ở cung "+palaceName(focus)+", làm nổi chủ đề "+CHU_DE[focus.kind]+". "+(combination(focus,COMBINATIONS)||plain(chart,focus,focus.kind===4?1:0))));
+  for(const [star,meaning] of [["Lưu Lộc Tồn","gợi ý xem nguồn lực nào đang sẵn có và phần nào nên giữ lại"],["Lưu Kình Dương","đánh dấu nơi dễ phát sinh bất đồng hoặc cần quyết nhanh"],["Lưu Đà La","nhấn vào việc kéo dài, cần thêm thời gian hoặc phải làm lại"]]){
+    const i=f.moving.findIndex(stars=>stars.includes(star)),h=chart.houses[i];
+    lines.push(paragraph(star,"Ở cung "+palaceName(h)+", sao này "+meaning+". "+(h.minor.includes(star.slice(4))?"Sao gốc và sao lưu trùng cung, vì vậy nét này được nhắc lại ở cả hai lớp.":"")));
+  }
+  return {title:"Vận hạn "+year+" · "+canChi(year),lines,basis:f.age+" tuổi mụ. Tiểu hạn tại "+CHI[f.annual]+", Lưu Thái Tuế tại "+CHI[branch(year)]+"."};
+}
+// Lấy ba tháng âm thực sự liên tiếp; giữ tháng nhuận và chuyển năm khi cần.
+function threeMonths(year,start){
+  let k=winterMonth(year-1);
+  function info(k){
+    const day=newMoon(k), end=newMoon(k+1)-1;
+    const date=new Date((day-2440588)*86400000);
+    const lunar=lunarDate(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate());
+    return {...lunar,first:day,end};
+  }
+  for(let n=0;n<28;n++,k++){
+    const l=info(k);
+    if(l.year===year&&l.month===start&&!l.leap)return [l,info(k+1),info(k+2)];
+  }
+  throw new Error("Không tìm được tháng âm lịch.");
+}
+function solarLabel(jd){
+  const d=new Date((jd-2440588)*86400000);
+  return d.getUTCDate()+"/"+(d.getUTCMonth()+1)+"/"+d.getUTCFullYear();
+}
+const MONTH_ACTION=["Nếu đang phải chọn hướng đi, hãy viết ra một ưu tiên và một việc có thể hoàn thành ngay trong tháng.","Có thể tìm một người nhiều kinh nghiệm để xin nhận xét về hướng đi hoặc kế hoạch đang chuẩn bị.","Dành một buổi rà soát các việc gia đình còn dang dở, chọn việc cả nhà có thể cùng giải quyết.","Kiểm tra nhu cầu chỗ ở và những khoản chi gia đình sắp đến hạn.","Chọn một nhiệm vụ có kết quả đo được, làm rõ người chịu trách nhiệm và thời hạn.","Nếu cần sự giúp đỡ, hãy liên hệ một đồng nghiệp từng làm việc cùng và nêu rõ điều mình cần.","Khi gặp một nhóm hoặc môi trường mới, hãy thống nhất kỳ vọng hai bên trước khi nhận việc.","Theo dõi nhịp sinh hoạt thực tế và sắp xếp khoảng nghỉ cho những ngày bận.","Rà lại khoản thu chắc chắn, khoản đang chờ và các chi phí của tháng.","Dành thời gian cho việc chăm sóc hoặc trao đổi với người trong gia đình.","Chọn một việc hai người thường hiểu khác nhau để thống nhất cách xử lý.","Nếu đang tìm việc, có thể gửi CV cho người quen từng làm cùng và nhờ góp ý hoặc giới thiệu một vị trí phù hợp."];
+function monthReport(chart,period){
+  const {year,month,leap}=period,f=fortune(chart,year,month),h=chart.houses[f.monthly];
+  const cc=CAN[mod(2*(stem(year)%5)+month+1,10)]+" "+CHI[mod(month+1)];
+  const lines=[paragraph("Trọng tâm","Nguyệt hạn đi vào cung "+palaceName(h)+". Chủ đề tháng là "+CHU_DE[h.kind]+". "+(combination(h,COMBINATIONS)||plain(chart,h,h.kind===4?1:h.kind===8?2:0)))];
+  const extra=combination(h,ADDITIONS);if(extra)lines.push(paragraph("Điểm đáng lưu ý",extra));
+  lines.push(paragraph("Việc có thể làm",MONTH_ACTION[h.kind]));
+  return {title:"Tháng "+month+(leap?" nhuận":"")+" âm · "+cc,lines,basis:solarLabel(period.first)+" – "+solarLabel(period.end)+" dương lịch. "+evidence(chart,h)};
+}
 function initUI(){
   const $=id=>document.getElementById(id);
   const el=(tag,cls,txt)=>{
@@ -186,6 +291,7 @@ function initUI(){
   const fmt=n=>String(n).padStart(2,"0");
   CHI.forEach((name,i)=>$("hour").add(new Option(name+" · "+fmt(mod(2*i-1,24))+":00–"+fmt(mod(2*i+1,24))+":00",i)));
   for(let m=1;m<=12;m++) $("month").add(new Option("Tháng "+m,m));
+  $("month").value=10;
   $("hour").value=9;
   const now=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Ho_Chi_Minh",year:"numeric",month:"numeric",day:"numeric"}).formatToParts(new Date());
   const today=Object.fromEntries(now.map(x=>[x.type,+x.value]));
@@ -209,7 +315,7 @@ function initUI(){
   function render(){
     const f=fortune(chart,year,+$("month").value), natal=mode==="birth", monthly=mode==="monthly";
     document.querySelectorAll("[data-mode]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===mode));
-    $("month").parentElement.hidden=!monthly;
+
     const board=$("board");board.replaceChildren();
     const c=el("section","center");
     const l=chart.lunar, yin=stem(l.year)%2?"Âm":"Dương";
@@ -229,7 +335,7 @@ function initUI(){
       if(!natal&&i===f.decade?.index) marks.push("Đại hạn");
       if(!natal&&i===f.annual) marks.push("Tiểu hạn");
       if(monthly&&i===f.monthly) marks.push("Nguyệt hạn");
-      btn.append(meta,el("strong","",CUNG[h.kind]),el("span","major",h.major.join(" · ")||"Vô chính diệu"),el("span","minor",h.minor.join(" · ")));
+      btn.append(meta,el("strong","",CUNG[h.kind]),el("span","major",majorText(h)||"Vô chính diệu"),el("span","minor",h.minor.join(" · ")));
       if(!natal&&f.moving[i].length)btn.append(el("span","flow",f.moving[i].join(" · ")));
       if(marks.length)btn.append(el("span","mark",marks.join(" · ")));
       btn.onclick=()=>{
@@ -251,17 +357,28 @@ function initUI(){
       if(monthly) panel.append(el("p","flow","Tháng "+$("month").value+" âm lịch đi vào "+where(f.monthly)+". Trọng tâm tháng là "+CHU_DE[chart.houses[f.monthly].kind]+"."));
     }
     renderDetail(f);
-    const cards=readingCards(chart,year,f,monthly?+$("month").value:0);
-    $("readings").replaceChildren(...cards.map(({title,summary,body,evidence})=>{
+    const reportCard=({title,lines,basis})=>{
       const card=el("article","panel");
-      card.append(el("h3","",title),el("p","conclusion",summary),el("p","",body),el("small","basis","Căn cứ · "+evidence));
+      card.append(el("h3","",title),el("p","basis",basis));
+      for(const {label,body} of lines){
+        const p=el("p");p.append(el("strong","",label+(label.endsWith("?")?" ":". ")),document.createTextNode(body));card.append(p);
+      }
       return card;
-    }));
+    };
+    $("readings").replaceChildren(...[...natalReport(chart),annualReport(chart,year,f)].map(reportCard));
+    const periods=threeMonths(year,+$("month").value);
+    $("outlook").replaceChildren(...periods.map(period=>reportCard(monthReport(chart,period))));
+    const steps=periods.map(p=>{
+      const position=fortune(chart,p.year,p.month).monthly;
+      return "Tháng "+p.month+(p.leap?" nhuận":"")+" ("+CUNG[chart.houses[position].kind]+"): "+MONTH_ACTION[chart.houses[position].kind];
+    });
+    $("plan").textContent=steps.join(" ");
+
   }
   function renderDetail(f){
     const h=chart.houses[selected],panel=$("detail");
     panel.replaceChildren(el("h3","","Cung "+CUNG[h.kind]),el("p","","Cung đóng tại "+CHI[selected]+", chủ về "+CHU_DE[h.kind]+"."),
-    el("p","major",h.major.length?"Chính tinh: "+h.major.join(", "):"Vô chính diệu · Xét thêm chính tinh tại đối cung "+CHI[mod(selected+6)]+": "+chart.houses[mod(selected+6)].major.join(", ")+"."),
+    el("p","major",h.major.length?"Chính tinh: "+majorText(h):"Vô chính diệu · Xét thêm chính tinh tại đối cung "+CHI[mod(selected+6)]+": "+chart.houses[mod(selected+6)].major.join(", ")+"."),
     el("p","","Phụ tinh: "+(h.minor.join(", ")||"Không có trong nhóm sao cơ bản")+"."));
     if(mode!=="birth"){
       const meanings={"Lưu Thái Tuế":"chủ đề nổi bật của năm","Lưu Lộc Tồn":"nguồn lực và sự tích lũy","Lưu Kình Dương":"va chạm hoặc sức ép","Lưu Đà La":"việc trì hoãn, cần kiên nhẫn"};
@@ -274,7 +391,7 @@ function initUI(){
   document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{
     const old=mode;mode=b.dataset.mode;if(!submit(false))mode=old;
   });
-  $("month").onchange=()=>submit(false);
+  $("month").onchange=()=>{mode="monthly";submit(false);};
   drawDial();submit();
 }
 // Hoa văn thiên bàn: vòng chia độ và 12 địa chi, vẽ trực tiếp bằng Canvas.
